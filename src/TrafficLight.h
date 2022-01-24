@@ -20,7 +20,7 @@ class MessageQueue
 {
 public:
   void send(T &&);
-  T&& receive();
+  T receive();
 private:
   std::mutex _mutex;
   std::condition_variable _condition;
