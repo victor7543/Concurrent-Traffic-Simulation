@@ -18,7 +18,7 @@ T MessageQueue<T>::receive()
         _condition.wait(u_lock);
     }
     T msg = std::move(_queue.back());
-    _queue.pop_back();
+    _queue.clear();
     return msg;
 }
 
@@ -50,7 +50,6 @@ void TrafficLight::waitForGreen()
         if (_msg_queue.receive() == TrafficLightPhase::green) {
             return;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
 
@@ -76,20 +75,17 @@ void TrafficLight::cycleThroughPhases()
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles. 
     steady_clock::time_point timer_start = steady_clock::now();
     steady_clock::time_point timer_end = steady_clock::now();
-    
-    typedef std::mt19937 RNG;
-    uint32_t seed;  
-    RNG rng;
-    rng.seed(seed);
-    std::uniform_int_distribution<uint32_t> rng_range(4000,6000);
-    auto cycle_time = rng_range(rng);
+    std::random_device rnd;
+    std::mt19937 gnrt(rnd());
+    std::uniform_int_distribution<uint32_t> distrib(4000,6000);
+    auto cycle_time = distrib(gnrt);
     while (true) {
-        auto elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(timer_end - timer_start).count();
+        auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(timer_end - timer_start).count();
         if (elapsed_time >= cycle_time) {
             _currentPhase = (_currentPhase == TrafficLightPhase::red) ? TrafficLightPhase::green : TrafficLightPhase::red;
             _msg_queue.send(std::move(_currentPhase));
             timer_start = steady_clock::now();
-            cycle_time = rng_range(rng);
+            cycle_time = distrib(gnrt);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
         timer_end = steady_clock::now();
